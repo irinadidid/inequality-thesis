@@ -1,0 +1,40 @@
+> options(echo=FALSE, encoding="UTF-8")
+Loading required package: readstata13
+> options(error = expression(q('no')))
++ 
+> setups <- function(data_file) {        
++ vars <- c('dhi', 'hifactor', 'hpub_i', 'hpub_u', 'hpub_a', 'hiprivate', 'hxitsc', 'hpopwgt', 'nhhmem', 'grossnet')        
++ subset <- 'complete.cases(dhi, hifactor, hpub_i, hpub_u, hpub_a, hiprivate, hxitsc)'        
++ df <- read.LIS(data_file, labels=FALSE, vars=vars, subset=subset)          
++ return(df)        
++ }        
+>         
+> df <- setups('ru16h')        
+[1] "Loading dataset ru16h..."
+
+> library(scales)     
+> library(MASS)     
+> fit_lognormal = fitdistr(df$dhi, densfun = "lognormal")     
+> fit_lognormal   
+     meanlog         sdlog    
+  12.881426160    0.695368782 
+ ( 0.001738378) ( 0.001229219)
+>      
+>  library(ggplot2)     
+> mx <- mean(df$dhi)      
+> m2x <- median(df$dhi)      
+> m3x <- mode(df$dhi)     
+>    
+> library(dplyr)   
+
+Attaching package: ‘dplyr’
+
+>    
+> lognormal_estimate <- rlnorm(160008, fit_lognormal$estimate[1], fit_lognormal$estimate[2])   
+> df<-df%>%mutate(addl_col=lognormal_estimate)   
+>    
+> p <- ggplot(df, aes (x = dhi)) + geom_histogram(aes(y=..density..), position="identity", color="black", fill="white", bins =70) + stat_density(alpha = 0.3, color = "red", fill = "red")+ stat_density(data = df, aes (x = lognormal_estimate), alpha = 0.3, color = "black", fill = "gray") + geom_vline(xintercept=m2x, color="red", linetype="dashed", size=0.5) + xlim(0, 3000000)   
+> p     
+> proc.time()
+   user  system elapsed 
+  4.702   0.232   5.506
