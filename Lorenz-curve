@@ -1,0 +1,39 @@
+
+> options(echo=FALSE, encoding="UTF-8")
+Loading required package: readstata13
+> options(error = expression(q('no')))
+>  # Prepare session  
+> library(readr)  
+> library(dplyr)  
+Attaching package: ‘dplyr’
+The following objects are masked from ‘package:stats’:
+    filter, lag
+The following objects are masked from ‘package:base’:
+    intersect, setdiff, setequal, union
+> library(magrittr)  
+> library(purrr)  
+Attaching package: ‘purrr’
+The following object is masked from ‘package:magrittr’:
+    set_names
+> library(ggplot2) 
+> all_lissyrtools_scripts <- fs::dir_ls("/media/user/lissyrtools/")  
+> invisible(purrr::map(all_lissyrtools_scripts, ~ source(.x))) 
+> # Script -------------------------- 
+> # Read files 
+> lissy_datasets <- read_lissy_files(files = c("ru16h", "pl16h", "es16h"), full_year_name = TRUE) 
+[1] "Loading dataset ru16h..."
+[1] "Loading dataset pl16h..."
+[1] "Loading dataset es16h..."
+> # Data management  
+> lissy_datasets %<>% 
++ transform_negative_values_to_zero(variable = "dhi") %>%  
++ transform_equivalise(variable = "dhi") %>%  
++ transform_top_code_with_iqr(variable = "dhi", times = 3) %>%  
++ transform_weight_by_hh_size(variable = "dhi") 
+>  
+> lissy_datasets %>% 
++ plot_lorenz_curve(variable = "dhi", na.rm = TRUE)
+> 
+> proc.time()
+   user  system elapsed 
+ 10.302   0.421  11.864
