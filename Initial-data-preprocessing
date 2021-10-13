@@ -1,0 +1,183 @@
+> options(echo=FALSE, encoding="UTF-8")
+Loading required package: readstata13
+> options(error = expression(q('no')))
+> library(Hmisc) 
+Loading required package: lattice
+Loading required package: survival
+Loading required package: Formula
+Loading required package: ggplot2
+Attaching package: ‘Hmisc’
+The following objects are masked from ‘package:base’: format.pval, units
+> wmean <- function(x, weight)  
++ { 
++ y <- x[which(!is.na(x))] 
++ wgt <- weight[which(!is.na(x))] 
++ wmean <- sum(y*wgt/sum(wgt))  
++ return(wmean) 
++ } 
+> wNtile <- function(var, wgt, split) { 
++ x <- var[order(var)] 
++ y <- wgt[order(var)] 
++ z <-cumsum(y)/sum(y)  
++ cop <- rep(NA,length(split))  
++ for (i in 1:length(cop)) { 
++ cop[i] <- x[Find(function(h) z[h] > split[i], seq_along(z))]  
++ } 
++ return(cop)  
++ } 
+> vars <- c('dhi','hifactor','hpub_i', 'hpub_u','hpub_a','hiprivate','hxitsc','hpopwgt','nhhmem','grossnet') 
+> df <- read.LIS('ru16h', labels=FALSE, vars=vars) 
+[1] "Loading dataset ru16h..."
+> subset <- 'complete.cases(dhi,hifactor,hpub_i,hpub_u,hpub_a,hiprivate,hxitsc)'  
+> df2 <- read.LIS('ru16h', labels=FALSE, vars=vars, subset=subset)  
+[1] "Loading dataset ru16h..."
+> print(row_total <- nrow(df)) 
+[1] 160008
+> print(row_drop <- with(df, length(which((complete.cases(dhi,hifactor,hpub_i,hpub_u,hpub_a,hiprivate,hxitsc) == TRUE))))) 
+[1] 160008
+> print(miss_income<- row_total- row_drop )  
+[1] 0
+> round(((row_total - row_drop) / row_total) * 100, digits = 2)  
+[1] 0
+> print(c(toupper('grossnet'))) 
+[1] "GROSSNET"
+> print(table(df$grossnet, useNA = 'ifany')) 
+
+   120 
+160008 
+> print(paste(round(prop.table(table(df$grossnet, useNA = 'ifany')) * 100, digits = 2), "%", sep = "")) 
+[1] "100%"
+> cat(paste(" "), sep = '\n') 
+> for (x in c('hpopwgt','dhi','hifactor','hpub_i', 'hpub_u','hpub_a','hiprivate','hxitsc')) { 
++ df1 <- df[!is.na(df[[x]]), ]  
++ print(c(toupper(x))) 
++ print(c(nb_obs = sum(!is.na(df1[[x]]))))  
++ print(summary(df1[,x], digits = 10)) 
++ print(c(weighted_mean = round(wmean(df1[[x]], df1$hpopwgt*df1$nhhmem), digits = 2), weighted_median = round(wNtile(df1[[x]], df1$hpopwgt * df1$nhhmem, split = 0.5), digits = 2))) 
++ cat(" ", sep = '\n')  
++ } 
+[1] "HPOPWGT"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    2.0   111.3   201.9   355.6   379.7 58058.3 
+  weighted_mean weighted_median 
+        1520.91          604.91 
+[1] "DHI"
+nb_obs 
+160008 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+    1200   241887   394198   497711   624000 11048410 
+  weighted_mean weighted_median 
+       863230.8        717543.2 
+[1] "HIFACTOR"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0   20158  243678  363652  531349 9454672 
+  weighted_mean weighted_median 
+       750328.2        592810.3 
+[1] "HPUB_I"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0       0  110880  122112  198000 1967232 
+  weighted_mean weighted_median 
+       118689.9          6000.0 
+[1] "HPUB_U"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0       0       0   19570    7200 1089128 
+  weighted_mean weighted_median 
+        33260.3             0.0 
+[1] "HPUB_A"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0       0    5844   19390   24900 3045276 
+  weighted_mean weighted_median 
+       26350.82         6696.00 
+ 
+[1] "HIPRIVATE"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0       0       0   11916    5000 9301638 
+  weighted_mean weighted_median 
+       16703.18            0.00 
+[1] "HXITSC"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0       0   21159   38928   59023 1800000 
+  weighted_mean weighted_median 
+       82101.62        62758.62 
+> for (x in c('hpopwgt','dhi','hifactor','hpub_i', 'hpub_u','hpub_a','hiprivate','hxitsc'))  
++ { 
++ print(c(toupper(x))) 
++ print(c(nb_obs = sum(!is.na(df2[[x]]))))  
++ print(summary(df2[,x], digits = 10)) 
++ print(c(weighted_mean = round(wmean(df2[[x]], df2$hpopwgt*df2$nhhmem), digits = 2), weighted_median = round(wNtile(df2[[x]], df2$hpopwgt * df2$nhhmem, split = 0.5), digits = 2))) 
++ cat(" ", sep = '\n')  
++ }
+[1] "HPOPWGT"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    2.0   111.3   201.9   355.6   379.7 58058.3 
+  weighted_mean weighted_median 
+        1520.91          604.91 
+[1] "DHI"
+nb_obs 
+160008 
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+    1200   241887   394198   497711   624000 11048410 
+  weighted_mean weighted_median 
+       863230.8        717543.2 
+[1] "HIFACTOR"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0   20158  243678  363652  531349 9454672 
+  weighted_mean weighted_median 
+       750328.2        592810.3 
+[1] "HPUB_I"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0       0  110880  122112  198000 1967232 
+  weighted_mean weighted_median 
+       118689.9          6000.0 
+[1] "HPUB_U"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0       0       0   19570    7200 1089128 
+  weighted_mean weighted_median 
+        33260.3             0.0 
+[1] "HPUB_A"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0       0    5844   19390   24900 3045276 
+  weighted_mean weighted_median 
+       26350.82         6696.00 
+[1] "HIPRIVATE"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0       0       0   11916    5000 9301638 
+  weighted_mean weighted_median 
+       16703.18            0.00 
+[1] "HXITSC"
+nb_obs 
+160008 
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+      0       0   21159   38928   59023 1800000 
+  weighted_mean weighted_median 
+       82101.62        62758.62 
+> 
+> proc.time()
+   user  system elapsed 
+  8.552   0.397  10.195
