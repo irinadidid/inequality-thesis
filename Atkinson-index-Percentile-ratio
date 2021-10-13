@@ -1,0 +1,71 @@
+> options(echo=FALSE, encoding="UTF-8")
+Loading required package: readstata13
+> options(error = expression(q('no')))
+>  gini <- function(x,weight=rep(1,length(x))) { 
++  ox     <- order(x) 
++  x      <- x[ox] 
++  weight <- weight[ox]/sum(weight) 
++  p      <- cumsum(weight) 
++  nu     <- cumsum(weight*x) 
++  n      <- length(nu) 
++    nu     <- nu/nu[n] 
++    res    <- sum(nu[-1]*p[-n])-sum(nu[-n]*p[-1]) 
++  return(res) 
++ } 
+> atkinson <- function(x,y=rep(1,length(x)),epsilon=1) { 
++  keep <- which(!is.na(x)) 
++  x    <- x[keep] 
++    y    <- y[keep] 
++  x    <- x/mean(x) 
++    y    <- y/sum(y) 
++    res  <- ifelse(epsilon==1,1-(prod(exp(y*log(x)))/sum(x*y/sum(y))),1-(sum(((x/sum(x*y/sum(y)))^(1-epsilon))*y/sum(y)))^(1/(1-epsilon))) 
++  return(res) 
++ } 
+> wNtile <- function(df,var,weight,split) { 
++  df       <- df[order(df[paste(var)]),] 
++  df$cumwt <- cumsum(df[,paste(weight)])/sum(df[,paste(weight)]) 
++  res      <- df[,paste(var)][Find(function(y) df$cumwt[y]>split, seq_along(df$cumwt))] 
++  return(res)  
++ } 
+> lisTopBottom <- function(df,var,evar,weight) { 
++  df       <- df[which(!is.na(df[paste(var)])),] 
++  df       <- df[order(df[paste(var)]),] 
++  df$cumwt <- cumsum(df[,paste(weight)]) / sum(df[,paste(weight)]) 
++  topline  <- 10   * df[,paste(var)][Find(function(y) df$cumwt[y]>0.5,seq_along(df$cumwt))] 
++  botline  <- 0.01 * sum(df[,paste(var)]*df[,paste(weight)] / sum(df[,paste(weight)])) 
++  df[,paste(evar)] <- ifelse(df[,paste(evar)] < botline, botline                ,df[,paste(evar)]) 
++  df[,paste(evar)] <- ifelse(df[,paste(var)]  > topline, topline/sqrt(df$nhhmem),df[,paste(evar)]) 
++  return(df) 
++ } 
+> setups <- function(df) { 
++  hfile    <- paste(df,'h',sep='') 
++  dsh      <- read.LIS(hfile, vars=c("did","hid","nhhmem","dhi","hwgt"), subset="!is.na(dhi) & dhi !=0 & !is.na(hwgt)",labels=FALSE) 
++  dsh$ey   <- dsh$dhi  / sqrt(dsh$nhhmem) 
++  dsh$wt   <- dsh$hwgt * dsh$nhhmem 
++  dsh      <- lisTopBottom(dsh,'dhi','ey','wt')  
++  return(dsh) 
++ } 
+>  ds   <- c('ru16') 
+>  for (i in ds) { 
++  df <- setups(i) 
++  print(toupper("INEQUALITY")) 
++  print(paste("Gini                     : ", round(gini(df$ey,df$wt),digits=3)                                , sep="")) 
++  print(paste("Atkinson (0.5)           : ", round(atkinson(df$ey, y=df$wt,epsilon=0.5),digits=3)             , sep="")) 
++  print(paste("Atkinson (1.0)           : ", round(atkinson(df$ey, y=df$wt,epsilon=1.0),digits=3)             , sep="")) 
++  print(paste("Percentile ratio (90/10) : ", round(wNtile(df,"ey","wt",0.9)/wNtile(df,"ey","wt",0.1),digits=3), sep="")) 
++  print(paste("Percentile ratio (90/50) : ", round(wNtile(df,"ey","wt",0.9)/wNtile(df,"ey","wt",0.5),digits=3), sep="")) 
++  print(paste("Percentile ratio (80/20) : ", round(wNtile(df,"ey","wt",0.8)/wNtile(df,"ey","wt",0.2),digits=3), sep="")) 
++  }
+[1] "Loading dataset ru16h..."
+[1] "INEQUALITY"
+[1] "Gini                     : 0.331"
+[1] "Atkinson (0.5)           : 0.089"
+[1] "Atkinson (1.0)           : 0.17"
+[1] "Percentile ratio (90/10) : 4.62"
+[1] "Percentile ratio (90/50) : 2.118"
+[1] "Percentile ratio (80/20) : 2.714"
+> 
+> proc.time()
+   user  system elapsed 
+  4.599   0.232   5.379
+ 
