@@ -1,0 +1,80 @@
+
+> options(echo=FALSE, encoding="UTF-8")
+Loading required package: readstata13
+> options(error = expression(q('no')))
+>  gini <- function(x,weight){ 
++ ox <- order(x) 
++ x <- x[ox] 
++ weight <- weight[ox]/sum(weight) 
++ p <- cumsum(weight) 
++ nu <- cumsum(weight*x) 
++ n <- length(nu) 
++ nu <- nu/nu[n] 
++ res <- sum(nu[-1]*p[-n])-sum(nu[-n]*p[-1]) 
++ return(res) 
++ } 
+> wNtile<- function(var,wgt,split){ 
++ x <- var[order(var)] 
++ y <- wgt[order(var)] 
++ z <- cumsum(y) / sum(y)  
++ cop <- rep(NA,length(split))  
++ for (i in 1:length(cop))  
++ { 
++ cop[i] <- x[Find(function(h)z[h] > split[i], seq_along(z))] } 
++ return(cop)  
++ } 
+> setups <- function(data_file)  
++ { 
++ vars <- c('dhi', 'hifactor', 'hi33', 'hpublic','hpub_i', 'hpub_u', 'hpub_a', 'hiprivate', 'hxitsc', 'hpopwgt', 'nhhmem', 'grossnet') 
++ subset <- 'complete.cases(dhi, hifactor, hi33, hpublic, hpub_i, hpub_u, hpub_a, hiprivate, hxitsc)' 
++ df <- read.LIS(data_file, labels = FALSE, vars = vars, subset = subset)  
++ df$dhi <- ifelse(df$dhi < 0, 0, df$dhi) 
++ df$edhi <- df$dhi / (df$nhhmem^0.5) 
++ df$mi <- df$hifactor + df$hiprivate+df$hi33 
++ df$mi <- ifelse(df$mi < 0, 0, df$mi) 
++ df$emi <- df$mi / (df$nhhmem^0.5) 
++ df$siti <- df$hifactor + df$hiprivate + df$hi33 + df$hpub_i + df$hpub_u - df$hxitsc 
++ df$siti <- ifelse(df$siti < 0, 0, df$siti) 
++ df$esiti <- df$siti /(df$nhhmem^0.5) 
++ df$sa <- df$hifactor + df$hiprivate + df$hi33 + df$hpub_a  
++ df$sa <- ifelse(df$sa < 0, 0, df$sa) 
++ df$esa <- df$sa / (df$nhhmem^0.5) 
++ return(df)  
++ } 
+> df <- setups('ru16h') 
+[1] "Loading dataset ru16h..."
+> maxline <- 0.5 
+> for(var in c('emi', 'esiti', 'esa', 'edhi')) { 
++ cat(paste("VARIABLE: ", var), sep = '\n') 
++ cat(paste("Gini Coefficient :" , round(gini(df[[var]], df$hpopwgt*df$nhhmem), digits = 3)), sep = '\n') 
++ cat(paste("Poverty Rate :", round(100 * (sum((df[[var]] < maxline * wNtile(df$edhi, df$hpopwgt * df$nhhmem, 0.5)) * df$hpopwgt * df$nhhmem) / sum(df$hpopwgt * df$nhhmem)), digits = 2)), sep = '\n') 
++ cat(" ", sep = '\n') } 
+VARIABLE:  emi
+Gini Coefficient : 0.446
+Poverty Rate : 29.22
+ 
+VARIABLE:  esiti
+Gini Coefficient : 0.34
+Poverty Rate : 14.88
+ 
+VARIABLE:  esa
+Gini Coefficient : 0.429
+Poverty Rate : 27.06
+ 
+VARIABLE:  edhi
+Gini Coefficient : 0.332
+Poverty Rate : 12.7
+ 
+> for (var in c('hpublic','hpub_i','hpub_u','hpub_a'))  
++ {  
++ cat(paste("Mean: ", var, round(mean(df[[var]]), digits = 2))) 
++ cat(" ", sep = '\n') }
+Mean:  hpublic 161071.17 
+Mean:  hpub_i 122111.74 
+Mean:  hpub_u 19569.93 
+Mean:  hpub_a 19389.5 
+> 
+> proc.time()
+   user  system elapsed 
+  3.007   0.207   3.756
+
